@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}Préstamos - LABS CRPO{% endblock %}
+
+{% block content %}
+<style>
+    /* ADAPTACIÓN AL MODO OSCURO CON VARIABLES INTELIGENTES */
+    .table-container { background: var(--surface-white); border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); border: 1px solid var(--border-color); overflow: hidden; margin-top: 10px; transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .saas-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .saas-table th { background-color: var(--bg-light); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 18px 24px; border-bottom: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .saas-table td { padding: 18px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-main); font-size: 0.95rem; transition: border-color var(--transition-fast); }
+    .saas-table tbody tr:hover { background-color: var(--bg-light); }
+    
+    .btn-primary { background: var(--brand-accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .btn-primary:hover { background: #2563eb; box-shadow: 0 4px 12px var(--brand-glow); transform: translateY(-2px); }
+    
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge.danger { background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); } 
+    .badge.success { background: rgba(16, 185, 129, 0.15); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.3);}
+    .badge.atrasado { background: rgba(239, 68, 68, 0.15); color: var(--error-color); border: 1px solid rgba(239, 68, 68, 0.3); animation: pulse 2s infinite; }
+
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+    /* Fila roja para mora adaptada */
+    .tr-atrasado { background-color: rgba(239, 68, 68, 0.05); }
+    .tr-atrasado:hover { background-color: rgba(239, 68, 68, 0.1) !important; }
+
+    /* AÑADIDO: EL FONDO DEL MODAL AHORA TIENE EL EFECTO BLUR QUE PEDISTE */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-content { background: var(--surface-white); padding: 30px; border-radius: 16px; width: 500px; max-width: 90%; box-shadow: 0 10px 25px var(--shadow-color); max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+    
+    /* INPUTS ADAPTADOS A MODO OSCURO */
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; background-color: var(--bg-light); color: var(--text-main); transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--brand-accent); }
+    
+    select[multiple] { height: 120px; padding: 5px; }
+    select[multiple] option { padding: 8px; border-radius: 4px; margin-bottom: 2px; }
+    select[multiple] option:checked { background: var(--brand-accent) linear-gradient(0deg, var(--brand-accent) 0%, var(--brand-accent) 100%); color: white; }
+    
+    /* Pequeño ajuste para el botón de cancelar en modo oscuro */
+    .btn-cancel { background: var(--bg-light); color: var(--text-main); }
+    .btn-cancel:hover { background: var(--border-color); }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <h1 class="section-title" style="margin-bottom: 0; border-bottom: none;">Control de Préstamos</h1>
+    <button class="btn-primary" onclick="document.getElementById('modalPrestamo').style.display='flex'">
+        <i class="fas fa-handshake"></i> Nuevo Préstamo
+    </button>
+</div>
+
+<div class="table-container">
+    <table class="saas-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Equipos Asignados</th>
+                <th>Solicitante</th>
+                <th>Tiempos (Inicio / Fin)</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in prestamos %}
+            <tr class="{% if p.atrasado %}tr-atrasado{% endif %}" style="{% if p.id_estado == 2 %}opacity:0.6;{% endif %}">
+                <td><strong style="color: var(--text-muted);">{{ p.id }}</strong></td>
+                <td><i class="fas fa-microchip" style="color: var(--brand-accent); margin-right:5px;"></i> {{ p.equipo }}</td>
+                <td><strong>{{ p.usuario }}</strong></td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">
+                    <div style="margin-bottom: 4px;"><i class="fas fa-arrow-right" style="color: var(--success-color);"></i> {{ p.fecha_inicio }}</div>
+                    <div><i class="fas fa-arrow-left" style="color: var(--error-color);"></i> <strong style="{% if p.atrasado %}color: var(--error-color);{% endif %}">{{ p.fecha_fin }}</strong></div>
+                </td>
+                <td>
+                    {% if p.atrasado %}
+                        <span class="badge atrasado"><i class="fas fa-exclamation-triangle"></i> VENCIDO</span>
+                    {% elif p.id_estado == 1 %}
+                        <span class="badge danger"><i class="fas fa-clock"></i> EN USO</span>
+                    {% else %}
+                        <span class="badge success"><i class="fas fa-check-circle"></i> DEVUELTO</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.id_estado == 1 %}
+                    <form action="{{ url_for('recibir_prestamo', id=p.db_id) }}" method="POST" style="margin:0;" onsubmit="return confirm('¿Confirmar recepción de TODOS los equipos de este préstamo?');">
+                        <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem; background: var(--brand-primary);">
+                            <i class="fas fa-box-open"></i> Recibir
+                        </button>
+                    </form>
+                    {% else %}
+                    <span style="color: var(--success-color); font-weight: bold; font-size: 0.85rem;"><i class="fas fa-check-double"></i> Cerrado</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="fas fa-clipboard-list" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                    No hay registro de préstamos.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="modalPrestamo" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Autorizar Nuevo Préstamo</h3>
+        <form action="{{ url_for('registrar_prestamo') }}" method="POST" id="formPrestamo">
+            
+            <div class="form-group">
+                <label>Usuario Solicitante</label>
+                <select name="id_usuario" required>
+                    <option value="" disabled selected>Seleccione quién recibe...</option>
+                    {% for u in catalogos['usuarios'] %}
+                        <option value="{{ u.id }}">{{ u.dni }} - {{ u.nombre }} {{ u.apellido }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Encargado que Autoriza</label>
+                <select name="id_encargado" required>
+                    {% for e in catalogos['encargados'] %}
+                        <option value="{{ e.id }}">{{ e.nombre_completo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Equipos a Prestar (Ctrl + Clic para seleccionar varios)</label>
+                <select name="id_equipos" multiple required>
+                    {% for eq in catalogos['equipos'] %}
+                        <option value="{{ eq.id }}">{{ eq.codigo_inventario }} - {{ eq.nombre }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color: var(--text-muted); font-size: 0.75rem;">* Solo se muestran equipos en estado OPERATIVO.</small>
+            </div>
+
+            <div class="form-group"><label>Propósito / Observación</label><textarea name="proposito" rows="2" required></textarea></div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Fecha/Hora de Salida</label><input type="datetime-local" id="fecha_inicio" name="fecha_prestamo" required></div>
+                <div class="form-group"><label>Fecha/Hora de Devolución</label><input type="datetime-local" id="fecha_fin" name="fecha_devolucion" required></div>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-primary btn-cancel" onclick="document.getElementById('modalPrestamo').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Registrar y Entregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('formPrestamo').addEventListener('submit', function(e) {
+        var inicio = new Date(document.getElementById('fecha_inicio').value);
+        var fin = new Date(document.getElementById('fecha_fin').value);
+        
+        if (fin <= inicio) {
+            e.preventDefault(); 
+            alert("❌ ERROR DE TIEMPO: La fecha y hora de devolución no puede ser anterior ni igual a la fecha de salida.");
+        }
+    });
+</script>
+{% endblock %}

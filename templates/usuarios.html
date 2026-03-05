@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block title %}Gestión de Usuarios - LABS CRPO{% endblock %}
+
+{% block content %}
+<style>
+    .header-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .section-title { font-size: 1.8rem; color: var(--brand-dark); font-weight: 700; margin: 0; transition: color var(--transition-fast); }
+    
+    /* Botón Global */
+    .btn-primary { background: var(--brand-accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;}
+    .btn-primary:hover { background: #2563eb; }
+
+    /* TABLA ADAPTADA A MODO OSCURO */
+    .table-container { background: var(--surface-white); border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); overflow: hidden; border: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: var(--bg-light); padding: 18px 24px; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    td { padding: 18px 24px; font-size: 0.95rem; border-bottom: 1px solid var(--border-color); vertical-align: middle; transition: border-color var(--transition-fast); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: var(--bg-light); }
+    
+    .user-name { font-weight: 600; color: var(--brand-dark); display: flex; align-items: center; gap: 12px; transition: color var(--transition-fast); }
+    .avatar-icon { width: 36px; height: 36px; background: var(--bg-light); color: var(--text-main); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; border: 1px solid var(--border-color); transition: background-color var(--transition-fast), color var(--transition-fast); }
+    
+    /* ROLES ADAPTADOS PARA LEERSE BIEN EN CLARO Y OSCURO */
+    .role-badge { padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+    .role-coordinador { background: rgba(59, 130, 246, 0.15); color: var(--info-color); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-operador { background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    /* Estado y Acciones */
+    .status-badge { padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;}
+    .status-active { background: rgba(16, 185, 129, 0.15); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-inactive { background: rgba(239, 68, 68, 0.15); color: var(--error-color); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .action-buttons { display: flex; gap: 8px; }
+    .btn-icon { width: 34px; height: 34px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-edit { background: var(--bg-light); color: var(--text-main); }
+    .btn-edit:hover { background: var(--border-color); }
+    .btn-toggle-off { background: rgba(239, 68, 68, 0.15); color: var(--error-color); }
+    .btn-toggle-on { background: rgba(16, 185, 129, 0.15); color: var(--success-color); }
+
+    /* Modales CON BLUR Y VARIABLES */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-content { background: var(--surface-white); padding: 30px; border-radius: 16px; width: 450px; max-width: 90%; box-shadow: 0 10px 25px var(--shadow-color); border: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; background-color: var(--bg-light); color: var(--text-main); transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--brand-accent); }
+    
+    .btn-cancel { background: var(--bg-light); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-cancel:hover { background: var(--border-color); }
+</style>
+
+<div class="header-section">
+    <h1 class="section-title">Gestión de Usuarios</h1>
+    <button class="btn-primary" onclick="document.getElementById('modalCrearUsuario').style.display='flex'">
+        <i class="fas fa-user-plus"></i> Nuevo Usuario
+    </button>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>DNI / Cédula</th>
+                <th>Correo Institucional</th>
+                <th>Rol Asignado</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in usuarios %}
+            <tr style="{% if not user.activo %}opacity: 0.6;{% endif %}">
+                <td>
+                    <div class="user-name">
+                        <div class="avatar-icon">{{ user.nombre_completo[0] | upper }}</div>
+                        {{ user.nombre_completo }}
+                    </div>
+                </td>
+                <td style="color: var(--text-muted); font-family: monospace; font-size: 1rem;">{{ user.dni }}</td>
+                <td>{{ user.correo }}</td>
+                <td>
+                    <span class="role-badge {% if user.rol == 'Coordinador' %}role-coordinador{% else %}role-operador{% endif %}">
+                        <i class="fas {% if user.rol == 'Coordinador' %}fa-shield-alt{% else %}fa-user-cog{% endif %}"></i>
+                        {{ user.rol }}
+                    </span>
+                </td>
+                <td>
+                    {% if user.activo %}
+                        <span class="status-badge status-active"><i class="fas fa-circle" style="font-size: 0.4rem;"></i> Activo</span>
+                    {% else %}
+                        <span class="status-badge status-inactive"><i class="fas fa-circle" style="font-size: 0.4rem;"></i> Suspendido</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-icon btn-edit" title="Editar Información"
+                            data-id="{{ user.id }}" data-nombre="{{ user.nombre }}" data-apellido="{{ user.apellido }}" 
+                            data-dni="{{ user.dni }}" data-rol="{{ user.id_rol }}" onclick="abrirModalEditarUsuario(this)">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        
+                        <form action="{{ url_for('estado_usuario', id=user.id) }}" method="POST" style="margin:0;" 
+                              onsubmit="return confirm('¿Seguro que deseas {% if user.activo %}SUSPENDER{% else %}HABILITAR{% endif %} el acceso y las funciones de este usuario?');">
+                            
+                            <input type="hidden" name="estado_actual" value="{% if user.activo %}True{% else %}False{% endif %}">
+                            
+                            <button type="submit" class="btn-icon {% if user.activo %}btn-toggle-off{% else %}btn-toggle-on{% endif %}" 
+                                    title="{% if user.activo %}Suspender Acceso{% else %}Habilitar Acceso{% endif %}">
+                                <i class="fas {% if user.activo %}fa-ban{% else %}fa-check{% endif %}"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                    No hay usuarios registrados en el sistema.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="modalCrearUsuario" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Registrar Nuevo Usuario</h3>
+        <form action="{{ url_for('crear_usuario') }}" method="POST">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Nombre</label><input type="text" name="nombre" required></div>
+                <div class="form-group"><label>Apellido</label><input type="text" name="apellido" required></div>
+            </div>
+            
+            <div class="form-group"><label>DNI / Cédula</label><input type="text" name="dni" required></div>
+            <div class="form-group"><label>Correo Institucional</label><input type="email" name="correo_institucional" required></div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Contraseña Temporal</label><input type="password" name="password" required></div>
+                <div class="form-group"><label>Rol del Sistema</label>
+                    <select name="id_rol" required>
+                        <option value="1">Coordinador (Administrador)</option>
+                        <option value="2" selected>Operador (Técnico)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalCrearUsuario').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Registrar Usuario</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditarUsuario" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Editar Información de Usuario</h3>
+        <form id="formEditUser" method="POST">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Nombre</label><input type="text" id="edit_nombre" name="nombre" required></div>
+                <div class="form-group"><label>Apellido</label><input type="text" id="edit_apellido" name="apellido" required></div>
+            </div>
+            
+            <div class="form-group"><label>DNI / Cédula</label><input type="text" id="edit_dni" name="dni" required></div>
+            
+            <div class="form-group"><label>Rol del Sistema</label>
+                <select id="edit_rol" name="id_rol" required>
+                    <option value="1">Coordinador (Administrador)</option>
+                    <option value="2">Operador (Técnico)</option>
+                </select>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditarUsuario').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalEditarUsuario(btn) {
+        document.getElementById('edit_nombre').value = btn.getAttribute('data-nombre');
+        document.getElementById('edit_apellido').value = btn.getAttribute('data-apellido');
+        document.getElementById('edit_dni').value = btn.getAttribute('data-dni');
+        document.getElementById('edit_rol').value = btn.getAttribute('data-rol');
+        
+        document.getElementById('formEditUser').action = "/usuarios/editar/" + btn.getAttribute('data-id');
+        
+        document.getElementById('modalEditarUsuario').style.display = 'flex';
+    }
+</script>
+{% endblock %}

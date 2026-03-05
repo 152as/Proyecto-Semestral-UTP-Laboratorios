@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% block title %}Inventario - LABS CRPO{% endblock %}
+
+{% block content %}
+<style>
+    /* TUS ESTILOS ORIGINALES INTACTOS Y ADAPTADOS A MODO OSCURO */
+    .table-container { background: var(--surface-white); border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); border: 1px solid var(--border-color); overflow: hidden; margin-top: 10px; margin-bottom: 35px; transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .saas-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .saas-table th { background-color: var(--bg-light); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 18px 24px; border-bottom: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .saas-table td { padding: 18px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-main); font-size: 0.95rem; transition: border-color var(--transition-fast); }
+    .saas-table tbody tr:last-child td { border-bottom: none; }
+    .saas-table tbody tr:hover { background-color: var(--bg-light); }
+    
+    .btn-primary { background: var(--brand-accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .btn-primary:hover { background: #2563eb; box-shadow: 0 4px 12px var(--brand-glow); transform: translateY(-2px); }
+    
+    .btn-icon { background: var(--bg-light); color: var(--text-main); border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+    .btn-icon:hover { background: var(--border-color); color: var(--brand-accent); }
+    
+    /* Ajustes de badge para que se lean perfecto tanto en modo claro como oscuro */
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge.success { background: rgba(16, 185, 129, 0.15); color: var(--success-color); }
+    .badge.warning { background: rgba(245, 158, 11, 0.15); color: #d97706; } 
+    .badge.info { background: rgba(59, 130, 246, 0.15); color: var(--info-color); }
+    
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state i { font-size: 3rem; margin-bottom: 15px; opacity: 0.3; }
+    
+    /* FIX: EL MODAL AHORA USA VARIABLES INTELIGENTES */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-content { background: var(--surface-white); padding: 30px; border-radius: 12px; width: 400px; max-width: 90%; box-shadow: 0 10px 25px var(--shadow-color); border: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; background-color: var(--bg-light); color: var(--text-main); transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--brand-accent); }
+
+    /* ESTILO AÑADIDO PARA LOS TÍTULOS DE LAS CATEGORÍAS */
+    .category-title { font-size: 1.15rem; font-weight: 700; color: var(--brand-dark); margin-top: 30px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--brand-accent); padding-bottom: 8px; width: fit-content; transition: color var(--transition-fast);}
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <h1 class="section-title" style="margin-bottom: 0; border-bottom: none;">Gestión de inventario</h1>
+    <button class="btn-primary" onclick="document.getElementById('modalRegistro').style.display='flex'"><i class="fas fa-plus"></i> Registrar Equipo</button>
+</div>
+
+{% if equipos %}
+    {% for tipo_cat in catalogos['tipos'] %}
+        
+        {% set equipos_en_categoria = [] %}
+        {% for item in equipos %}
+            {% if item.tipo == tipo_cat.nombre %}
+                {% set _ = equipos_en_categoria.append(item) %}
+            {% endif %}
+        {% endfor %}
+
+        {% if equipos_en_categoria|length > 0 %}
+            <h3 class="category-title"><i class="fas fa-layer-group" style="color: var(--brand-accent);"></i> {{ tipo_cat.nombre }}s</h3>
+            
+            <div class="table-container">
+                <table class="saas-table">
+                    <thead>
+                        <tr>
+                            <th>Cód. Activo</th>
+                            <th>Descripción del Equipo</th>
+                            <th>Ubicación</th>
+                            <th>Specs (RAM/Detalles)</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in equipos_en_categoria %}
+                        <tr>
+                            <td><strong style="color: var(--brand-dark);">{{ item.id }}</strong></td>
+                            
+                            <td>
+                                <i class="{{ item.icono }}" style="color: var(--brand-accent); margin-right: 8px;" title="{{ item.tipo }}"></i>
+                                {{ item.equipo }}
+                            </td>
+                            
+                            <td><i class="fas fa-map-marker-alt" style="color: var(--text-muted); margin-right: 5px;"></i> {{ item.laboratorio }}</td>
+                            <td>{{ item.ram }}</td>
+                            <td>
+                                <span class="badge {% if item.estado == 'Operativo' %}success{% elif item.estado == 'Mantenimiento' %}warning{% else %}info{% endif %}">
+                                    {% if item.estado == 'Operativo' %}<i class="fas fa-check-circle"></i>
+                                    {% elif item.estado == 'Mantenimiento' %}<i class="fas fa-tools"></i>
+                                    {% else %}<i class="fas fa-exchange-alt"></i>{% endif %}
+                                    {{ item.estado }}
+                                </span>
+                            </td>
+                            <td style="display: flex; gap: 5px;">
+                                
+                                <button type="button" class="btn-icon" title="Editar Equipo" 
+                                    data-dbid="{{ item.db_id }}"
+                                    data-codigo="{{ item.id }}"
+                                    data-nombre="{{ item.equipo }}"
+                                    data-serie="{{ item.numero_serie }}"
+                                    data-tipo="{{ item.id_tipo_equipo }}"
+                                    data-lab="{{ item.id_laboratorio }}"
+                                    data-ram="{{ item.ram }}"
+                                    data-estado="{{ item.id_estado }}"
+                                    onclick="abrirModalEditar(this)">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                
+                                <form action="{{ url_for('eliminar_equipo', id=item.db_id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar este equipo del inventario?');" style="margin:0;">
+                                    <button type="submit" class="btn-icon" title="Eliminar Equipo"><i class="fas fa-trash-alt" style="color: #ef4444;"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% endfor %}
+    
+    {% set equipos_sin_categoria = [] %}
+    {% for item in equipos %}
+        {% if item.tipo == 'Otro' %}
+            {% set _ = equipos_sin_categoria.append(item) %}
+        {% endif %}
+    {% endfor %}
+
+    {% if equipos_sin_categoria|length > 0 %}
+        <h3 class="category-title"><i class="fas fa-box" style="color: var(--brand-accent);"></i> Otros Equipos</h3>
+        <div class="table-container">
+            <table class="saas-table">
+                <thead>
+                    <tr>
+                        <th>Cód. Activo</th>
+                        <th>Descripción del Equipo</th>
+                        <th>Ubicación</th>
+                        <th>Specs (RAM/Detalles)</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in equipos_sin_categoria %}
+                    <tr>
+                        <td><strong style="color: var(--brand-dark);">{{ item.id }}</strong></td>
+                        <td><i class="{{ item.icono }}" style="color: var(--brand-accent); margin-right: 8px;" title="{{ item.tipo }}"></i>{{ item.equipo }}</td>
+                        <td><i class="fas fa-map-marker-alt" style="color: var(--text-muted); margin-right: 5px;"></i> {{ item.laboratorio }}</td>
+                        <td>{{ item.ram }}</td>
+                        <td>
+                            <span class="badge {% if item.estado == 'Operativo' %}success{% elif item.estado == 'Mantenimiento' %}warning{% else %}info{% endif %}">
+                                {% if item.estado == 'Operativo' %}<i class="fas fa-check-circle"></i>
+                                {% elif item.estado == 'Mantenimiento' %}<i class="fas fa-tools"></i>
+                                {% else %}<i class="fas fa-exchange-alt"></i>{% endif %}
+                                {{ item.estado }}
+                            </span>
+                        </td>
+                        <td style="display: flex; gap: 5px;">
+                            <button type="button" class="btn-icon" title="Editar Equipo" data-dbid="{{ item.db_id }}" data-codigo="{{ item.id }}" data-nombre="{{ item.equipo }}" data-serie="{{ item.numero_serie }}" data-tipo="{{ item.id_tipo_equipo }}" data-lab="{{ item.id_laboratorio }}" data-ram="{{ item.ram }}" data-estado="{{ item.id_estado }}" onclick="abrirModalEditar(this)"><i class="fas fa-pen"></i></button>
+                            <form action="{{ url_for('eliminar_equipo', id=item.db_id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar este equipo?');" style="margin:0;"><button type="submit" class="btn-icon" title="Eliminar Equipo"><i class="fas fa-trash-alt" style="color: #ef4444;"></i></button></form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+{% else %}
+    <div class="table-container">
+        <table class="saas-table">
+            <tbody>
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <h3>No hay equipos en el inventario</h3>
+                            <p>Haz clic en "Registrar Equipo" para añadir el primer activo a la base de datos.</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+<div id="modalRegistro" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Registrar Nuevo Equipo</h3>
+        <form action="{{ url_for('registrar_equipo') }}" method="POST">
+            <div class="form-group"><label>Código de Inventario</label><input type="text" name="codigo_inventario" required></div>
+            <div class="form-group"><label>Nombre/Descripción</label><input type="text" name="nombre" required></div>
+            <div class="form-group"><label>Número de Serie</label><input type="text" name="numero_serie" placeholder="Ej. SN-987654321"></div>
+            
+            <div class="form-group">
+                <label>Tipo de Equipo</label>
+                <select name="id_tipo_equipo" required>
+                    <option value="" disabled selected>Seleccione un tipo...</option>
+                    {% for tipo in catalogos['tipos'] %}
+                    <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Laboratorio (Ubicación)</label>
+                <select name="id_laboratorio" required>
+                    <option value="" disabled selected>Seleccione un laboratorio...</option>
+                    {% for lab in catalogos['laboratorios'] %}
+                    <option value="{{ lab.id }}">{{ lab.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group"><label>Especificaciones (RAM / Detalles)</label><input type="text" name="ram" placeholder="Ej. 16GB DDR4"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn-icon" onclick="document.getElementById('modalRegistro').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditar" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Editar Equipo</h3>
+        <form id="formEditar" method="POST">
+            <div class="form-group"><label>Código de Inventario</label><input type="text" id="edit_codigo" name="codigo_inventario" required></div>
+            <div class="form-group"><label>Nombre/Descripción</label><input type="text" id="edit_nombre" name="nombre" required></div>
+            <div class="form-group"><label>Número de Serie</label><input type="text" id="edit_serie" name="numero_serie" placeholder="Ej. SN-987654321"></div>
+            
+            <div class="form-group">
+                <label>Tipo de Equipo</label>
+                <select id="edit_tipo" name="id_tipo_equipo" required>
+                    {% for tipo in catalogos['tipos'] %}
+                    <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Laboratorio (Ubicación)</label>
+                <select id="edit_lab" name="id_laboratorio" required>
+                    {% for lab in catalogos['laboratorios'] %}
+                    <option value="{{ lab.id }}">{{ lab.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Estado del Equipo</label>
+                <select id="edit_estado" name="id_estado" required>
+                    <option value="1">Operativo</option>
+                    <option value="2">Mantenimiento</option>
+                    <option value="3">Prestado</option>
+                </select>
+            </div>
+            
+            <div class="form-group"><label>Especificaciones (RAM / Detalles)</label><input type="text" id="edit_ram" name="ram" placeholder="Ej. 16GB DDR4"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn-icon" onclick="document.getElementById('modalEditar').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalEditar(btn) {
+        // Extraer los datos del botón
+        const dbid = btn.getAttribute('data-dbid');
+        const codigo = btn.getAttribute('data-codigo');
+        const nombre = btn.getAttribute('data-nombre');
+        const serie = btn.getAttribute('data-serie');
+        const tipo = btn.getAttribute('data-tipo');
+        const lab = btn.getAttribute('data-lab');
+        const ram = btn.getAttribute('data-ram');
+        const estado = btn.getAttribute('data-estado');
+
+        // Llenar los campos del formulario
+        document.getElementById('edit_codigo').value = codigo;
+        document.getElementById('edit_nombre').value = nombre;
+        document.getElementById('edit_serie').value = serie;
+        document.getElementById('edit_tipo').value = tipo;
+        document.getElementById('edit_lab').value = lab;
+        document.getElementById('edit_estado').value = estado;
+        document.getElementById('edit_ram').value = ram;
+
+        // Ajustar la ruta del formulario para que incluya el ID real de la base de datos
+        document.getElementById('formEditar').action = "/inventario/editar/" + dbid;
+
+        // Mostrar el modal
+        document.getElementById('modalEditar').style.display = 'flex';
+    }
+</script>
+
+{% endblock %}

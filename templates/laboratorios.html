@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - LABS CRPO{% endblock %}
+
+{% block content %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+
+<style>
+    /* --- MÉTRICAS (SaaS Style) --- */
+    .metrics-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+        gap: 24px; 
+        margin-bottom: 40px; 
+    }
+    .metric-card { 
+        background: var(--surface-white); 
+        padding: 24px; 
+        border-radius: 16px; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03); 
+        border: 1px solid rgba(0,0,0,0.02);
+        display: flex; 
+        align-items: center; 
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .metric-card:hover { 
+        transform: translateY(-4px); 
+        box-shadow: 0 12px 25px rgba(0,0,0,0.06); 
+    }
+    .metric-icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
+        background: rgba(59, 130, 246, 0.1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 18px;
+    }
+    .metric-icon { font-size: 1.6rem; color: var(--brand-accent); }
+    .metric-info h3 { font-size: 2rem; color: var(--brand-dark); margin: 0; font-weight: 700; line-height: 1.2; }
+    .metric-info p { color: var(--text-muted); margin: 0; font-size: 0.9rem; font-weight: 500; }
+
+    /* --- TARJETAS DE LABORATORIOS --- */
+    .labs-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+        gap: 24px; 
+    }
+    .lab-card { 
+        background: var(--surface-white); 
+        padding: 25px; 
+        border-radius: 16px; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03); 
+        border: 1px solid rgba(0,0,0,0.02);
+        transition: all var(--transition-fast); 
+        display: flex;
+        flex-direction: column;
+    }
+    .lab-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08); 
+        border-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .lab-header { margin-bottom: 20px; }
+    .lab-header h2 { font-size: 1.25rem; color: var(--brand-dark); margin-bottom: 4px; font-weight: 600; }
+    .lab-header p.code { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; margin: 0; }
+    
+    .status { 
+        display: inline-flex; 
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px; 
+        border-radius: 8px; 
+        font-size: 0.75rem; 
+        font-weight: 700; 
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+    }
+    .status.disponible { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .status.en-clase { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .status.sin-registro { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    
+    .lab-footer { 
+        margin-top: 25px; 
+        padding-top: 20px; 
+        border-top: 1px dashed rgba(0,0,0,0.08); 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        font-size: 0.9rem; 
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    
+    .btn-manage { 
+        background: var(--brand-accent); 
+        color: white; 
+        border: none; 
+        padding: 8px 16px; 
+        border-radius: 8px; 
+        font-weight: 600;
+        cursor: pointer; 
+        transition: all var(--transition-fast); 
+        font-size: 0.85rem;
+    }
+    .btn-manage:hover { 
+        background: #2563eb; 
+        box-shadow: 0 4px 12px var(--brand-glow); 
+    }
+
+    /* AÑADIDO: ESTILOS DEL MODAL Y CALENDARIO */
+    .modal-calendar { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px);}
+    .modal-calendar-content { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 1100px; height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .modal-calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; }
+    .btn-close-modal { background: #f1f5f9; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; color: var(--text-main); font-size: 1.1rem; transition: 0.2s; }
+    .btn-close-modal:hover { background: #e2e8f0; color: #ef4444; }
+    #calendar-container { flex: 1; min-height: 0; }
+    
+    /* Ajustes visuales para que FullCalendar se vea moderno */
+    .fc { font-family: 'Inter', sans-serif !important; }
+    .fc-theme-standard .fc-scrollgrid { border-color: #e2e8f0 !important; }
+    .fc-v-event { border-radius: 6px; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border:none;}
+    .fc-event-title { font-weight: 600; font-size: 0.85rem; }
+    .fc-timegrid-now-indicator-line { border-color: #ef4444 !important; border-width: 2px !important; }
+    .fc-timegrid-now-indicator-arrow { border-color: #ef4444 !important; border-width: 6px !important; }
+</style>
+
+<h1 class="section-title">Resumen de Operaciones</h1>
+
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-icon-wrapper"><i class="fas fa-desktop metric-icon"></i></div>
+        <div class="metric-info">
+            <h3>{{ metricas.total_equipos }}</h3>
+            <p>Total Equipos</p>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon-wrapper"><i class="fas fa-handshake metric-icon"></i></div>
+        <div class="metric-info">
+            <h3>{{ metricas.prestamos_activos }}</h3>
+            <p>Préstamos Activos</p>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon-wrapper"><i class="fas fa-tools metric-icon"></i></div>
+        <div class="metric-info">
+            <h3>{{ metricas.mantenimientos_pendientes }}</h3>
+            <p>En Mantenimiento</p>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon-wrapper"><i class="fas fa-ticket-alt metric-icon"></i></div>
+        <div class="metric-info">
+            <h3>{{ metricas.reportes_hoy }}</h3>
+            <p>Tickets Hoy</p>
+        </div>
+    </div>
+</div>
+
+<h2 class="section-title" style="margin-top: 20px;">Estado de Laboratorios</h2>
+
+<div class="labs-grid">
+    {% for lab in laboratorios %}
+    <div class="lab-card">
+        <div class="lab-header">
+            <h2><i class="fas fa-door-open" style="color: var(--brand-accent); margin-right: 8px;"></i> {{ lab.nombre }}</h2>
+            <p class="code">Operador asignado: {{ lab.encargado }}</p>
+        </div>
+        
+        <div>
+            {% if lab.estado == 'Disponible' %}
+                <span class="status disponible"><i class="fas fa-check-circle"></i> {{ lab.estado }}</span>
+            {% elif lab.estado == 'En Clase' %}
+                <span class="status en-clase"><i class="fas fa-users"></i> {{ lab.estado }}</span>
+            {% else %}
+                <span class="status sin-registro"><i class="fas fa-exclamation-circle"></i> {{ lab.estado }}</span>
+            {% endif %}
+        </div>
+
+        <div class="lab-footer">
+            <span><i class="fas fa-microchip" style="margin-right: 5px; color: var(--brand-accent);"></i> {{ lab.pc_operativas }} / {{ lab.capacidad_maxima }} Equipos Activos</span>
+            <button class="btn-manage" onclick="abrirCalendarioLab('{{ lab.id }}', '{{ lab.nombre }}')"><i class="far fa-calendar-alt"></i> Ver Horarios</button>
+        </div>
+    </div>
+    {% else %}
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); background: white; border-radius: 16px; border: 1px dashed #cbd5e1;">
+        <i class="fas fa-school" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+        <h3>No hay laboratorios registrados</h3>
+        <p>Asegúrese de agregar laboratorios en la base de datos.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="modalVisualizadorCalendario" class="modal-calendar">
+    <div class="modal-calendar-content">
+        <div class="modal-calendar-header">
+            <h2 style="margin: 0; color: var(--brand-dark); font-size: 1.4rem;">
+                <i class="fas fa-calendar-week" style="color: var(--brand-accent); margin-right: 10px;"></i> 
+                Cronograma de Ocupación: <span id="titulo_calendario_lab" style="color: var(--brand-accent);"></span>
+            </h2>
+            <button class="btn-close-modal" onclick="cerrarCalendario()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="calendar-container"></div>
+    </div>
+</div>
+
+<script>
+    // Recibimos todos los eventos (de todos los laboratorios) desde Python a JavaScript
+    const todosLosEventos = {{ eventos_json | tojson | safe }};
+    let calendar;
+
+    function abrirCalendarioLab(idLaboratorio, nombreLaboratorio) {
+        document.getElementById('titulo_calendario_lab').innerText = nombreLaboratorio;
+        document.getElementById('modalVisualizadorCalendario').style.display = 'flex';
+        
+        // Filtramos para dejar SOLO los eventos del laboratorio clickeado
+        const eventosFiltrados = todosLosEventos.filter(ev => ev.extendedProps.id_laboratorio == idLaboratorio);
+
+        const calendarEl = document.getElementById('calendar-container');
+        
+        // Si el calendario ya existía, lo destruimos para dibujarlo de nuevo y sin bugs visuales
+        if (calendar) { calendar.destroy(); }
+
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek', // Vista semanal por horas como Teams
+            locale: 'es', // Español
+            headerToolbar: false, // Ocultamos los botones de meses porque es un horario fijo semanal
+            allDaySlot: false, // Quitamos la barra de "Todo el dia"
+            slotMinTime: "07:00:00", // El calendario empieza a las 7 AM
+            slotMaxTime: "22:00:00", // El calendario termina a las 10 PM
+            hiddenDays: [0], // Ocultamos el domingo (0) si la universidad no abre
+            nowIndicator: true, // LA LÍNEA ROJA DE TIEMPO ACTUAL 
+            events: eventosFiltrados, // Le pasamos los datos filtrados
+            height: '100%', // Que ocupe todo el espacio del modal
+            eventContent: function(arg) {
+                // Personalizamos cómo se ve el texto dentro del bloque de color
+                return {
+                    html: `
+                        <div style="padding:2px; display:flex; flex-direction:column; height:100%;">
+                            <div style="font-weight:700; font-size:0.8rem; margin-bottom:2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <i class="fas fa-user-tie"></i> Prof. ${arg.event.title}
+                            </div>
+                            <div style="font-size:0.75rem; opacity:0.9;">
+                                ${arg.timeText}
+                            </div>
+                        </div>
+                    `
+                };
+            }
+        });
+
+        // Dibujamos el calendario en la pantalla
+        calendar.render();
+    }
+
+    function cerrarCalendario() {
+        document.getElementById('modalVisualizadorCalendario').style.display = 'none';
+    }
+</script>
+{% endblock %}

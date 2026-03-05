@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Plataforma LABS CRPO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-dark: #0f172a;
+            --brand-primary: #1e293b;
+            --brand-accent: #3b82f6;
+            --brand-glow: rgba(59, 130, 246, 0.4);
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --surface-white: #ffffff;
+            --bg-input: #f8fafc;
+            --border-light: #e2e8f0;
+            --transition-fast: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { display: flex; height: 100vh; overflow: hidden; background-color: var(--surface-white); }
+
+        .split-container { display: flex; width: 100%; height: 100%; }
+
+        .left-panel {
+            flex: 1.2;
+            position: relative;
+            background-image: url("{{ url_for('static', filename='labUTP.avif') }}");
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(16, 185, 129, 0.3) 100%); 
+            z-index: 1;
+        }
+
+        .glass-card {
+            position: relative;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 50px 40px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .glass-card h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 15px; letter-spacing: -1px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .glass-card p { font-size: 1.1rem; line-height: 1.6; color: rgba(255,255,255,0.9); font-weight: 300; }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--surface-white);
+            padding: 40px;
+            position: relative;
+            overflow-y: auto; 
+        }
+
+        .form-wrapper {
+            width: 100%;
+            max-width: 480px; 
+            animation: fadeInUp 0.8s ease forwards;
+            opacity: 0;
+            transform: translateY(20px);
+            padding: 20px 0;
+        }
+
+        .form-header { text-align: center; margin-bottom: 35px; }
+        .form-header h2 { font-size: 2rem; color: var(--brand-dark); font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .form-header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        /* Estilos para Alertas de Flask */
+        .alert {
+            padding: 14px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-align: center;
+            animation: fadeInAlert 0.4s ease forwards;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .alert-error {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fee2e2;
+        }
+        .alert-success {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #dcfce7;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .input-group { margin-bottom: 20px; position: relative; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-main); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            background-color: var(--bg-input);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            transition: var(--transition-fast);
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: var(--brand-accent);
+            background-color: var(--surface-white);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--brand-dark);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-primary:hover {
+            background-color: var(--brand-accent);
+            box-shadow: 0 8px 20px var(--brand-glow);
+            transform: translateY(-2px);
+        }
+
+        .link-text { text-align: center; margin-top: 25px; font-size: 0.95rem; color: var(--text-muted); }
+        .link-text a { color: var(--brand-accent); text-decoration: none; font-weight: 600; transition: var(--transition-fast); }
+        .link-text a:hover { color: var(--brand-dark); text-decoration: underline; }
+
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInAlert { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="split-container">
+        
+        <div class="left-panel">
+            <div class="glass-card">
+                <h1>Únete a LABS</h1>
+                <p>Crea tu cuenta administrativa para empezar a gestionar los recursos e instalaciones de la Sede Panamá Oeste de forma inteligente.</p>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2>Crear Cuenta</h2>
+                    <p>Completa tu información institucional a continuación</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">
+                        {% if category == 'error' %} ⚠️ {% else %} ✅ {% endif %}
+                        {{ message }}
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+                
+                <form action="/registro" method="POST">
+                    
+                    <div class="grid-2">
+                        <div class="input-group">
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" placeholder="Ej. Simón" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Apellido</label>
+                            <input type="text" name="apellido" placeholder="Ej. Becerra" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="input-group">
+                            <label>DNI / Cédula</label>
+                            <input type="text" name="dni" placeholder="8-000-0000" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Correo Institucional</label>
+                            <input type="email" name="correo_institucional" placeholder="usuario@utp.ac.pa" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="input-group">
+                            <label>Contraseña</label>
+                            <input type="password" name="password" placeholder="••••••••" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Confirmar Contraseña</label>
+                            <input type="password" name="confirm_password" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Completar Registro <span>&check;</span>
+                    </button>
+                </form>
+                
+                <div class="link-text">
+                    ¿Ya tienes una cuenta asignada? <a href="/">Iniciar Sesión</a>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</body>
+</html>

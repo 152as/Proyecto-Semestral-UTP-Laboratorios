@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% block title %}Horarios - LABS CRPO{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos para Tablas SaaS Modernas ADAPTADAS A MODO OSCURO */
+    .table-container { background: var(--surface-white); border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); border: 1px solid var(--border-color); overflow: hidden; margin-top: 10px; transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .saas-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .saas-table th { background-color: var(--bg-light); color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 18px 24px; border-bottom: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .saas-table td { padding: 18px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-main); font-size: 0.95rem; transition: border-color var(--transition-fast); }
+    .saas-table tbody tr:last-child td { border-bottom: none; }
+    .saas-table tbody tr { transition: background-color var(--transition-fast); }
+    .saas-table tbody tr:hover { background-color: var(--bg-light); }
+
+    /* Botón Principal */
+    .btn-primary { background: var(--brand-accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .btn-primary:hover { background: #2563eb; box-shadow: 0 4px 12px var(--brand-glow); transform: translateY(-2px); }
+
+    /* Insignias de Estado (Badges para Horarios) */
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge.success { background: rgba(16, 185, 129, 0.15); color: var(--success-color); }
+    .badge.warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+
+    /* Estilos para las Tarjetas de Laboratorios */
+    .labs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 35px; }
+    .lab-card { background: var(--surface-white); border-radius: 16px; padding: 25px; box-shadow: 0 4px 20px var(--shadow-color); border: 1px solid var(--border-color); transition: 0.3s; position: relative; transition: background-color var(--transition-fast), border-color var(--transition-fast);}
+    .lab-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
+    
+    .lab-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+    .lab-title { font-size: 1.2rem; font-weight: 700; color: var(--brand-dark); display: flex; align-items: center; gap: 10px; transition: color var(--transition-fast); }
+    .lab-title i { color: var(--brand-accent); }
+    
+    /* NUEVOS ESTILOS PARA EL RADAR EN TIEMPO REAL */
+    .status-badge { padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .status-disponible { background: rgba(16, 185, 129, 0.15); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-en-clase { background: rgba(239, 68, 68, 0.15); color: var(--error-color); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .status-sin-registro { background: var(--bg-light); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+    .lab-stat { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main); }
+    .lab-stat i { color: var(--text-muted); width: 20px; }
+    .stat-number { font-weight: 700; color: var(--brand-dark); transition: color var(--transition-fast); }
+
+    .time-block { display: inline-flex; align-items: center; gap: 5px; background: rgba(59, 130, 246, 0.1); color: var(--info-color); padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; font-family: monospace;}
+
+    /* Modales CON BLUR Y VARIABLES */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-content { background: var(--surface-white); padding: 30px; border-radius: 16px; width: 500px; max-width: 90%; box-shadow: 0 10px 25px var(--shadow-color); border: 1px solid var(--border-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; background-color: var(--bg-light); color: var(--text-main); transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--brand-accent); }
+
+    /* ESTILOS AÑADIDOS PARA BOTONES DE ACCIÓN (EDITAR/ELIMINAR) */
+    .action-btns { display: flex; gap: 8px; }
+    .btn-icon { width: 34px; height: 34px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .btn-edit { background: var(--bg-light); color: var(--text-main); }
+    .btn-edit:hover { background: var(--border-color); transform: scale(1.05); }
+    .btn-del { background: rgba(239, 68, 68, 0.15); color: var(--error-color); }
+    .btn-del:hover { background: rgba(239, 68, 68, 0.25); transform: scale(1.05); }
+
+    .btn-cancel { background: var(--bg-light); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-cancel:hover { background: var(--border-color); }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <h1 class="section-title" style="margin-bottom: 0; border-bottom: none; font-size: 1.8rem; color: var(--brand-dark); font-weight: 700; transition: color var(--transition-fast);">Programación y Laboratorios</h1>
+    <button class="btn-primary" onclick="document.getElementById('modalHorario').style.display='flex'">
+        <i class="fas fa-plus"></i> Nueva Asignación
+    </button>
+</div>
+
+<h3 style="margin-bottom: 15px; color: var(--text-muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Estado en Tiempo Real</h3>
+<div class="labs-grid">
+    {% for lab in laboratorios %}
+    <div class="lab-card">
+        <div class="lab-header">
+            <div class="lab-title"><i class="fas fa-door-open"></i> {{ lab.nombre }}</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span class="status-badge 
+                    {% if lab.estado == 'Disponible' %}status-disponible
+                    {% elif lab.estado == 'En Clase' %}status-en-clase
+                    {% else %}status-sin-registro{% endif %}">
+                    {{ lab.estado }}
+                </span>
+                <button type="button" onclick="abrirModalCapacidad('{{ lab.id }}', '{{ lab.nombre }}', '{{ lab.capacidad_maxima }}')" style="background:none; border:none; color:var(--text-muted); cursor:pointer;" title="Editar Capacidad Máxima">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="lab-stat">
+            <span><i class="fas fa-desktop"></i> Equipos Registrados:</span>
+            <span class="stat-number">{{ lab.pc_operativas }} / {{ lab.capacidad_maxima }}</span> 
+        </div>
+        <div class="lab-stat" style="margin-bottom: 0;">
+            <span><i class="fas fa-user-shield"></i> Operador a cargo:</span>
+            <span style="font-weight: 600; color: var(--brand-accent);">{{ lab.encargado }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<h3 style="margin-bottom: 15px; margin-top: 20px; color: var(--text-muted); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Cronograma Semanal</h3>
+<div class="table-container">
+    <table class="saas-table">
+        <thead>
+            <tr>
+                <th>Día</th>
+                <th>Horario</th>
+                <th>Laboratorio</th>
+                <th>Responsable</th>
+                <th>Estado</th>
+                <th>Acciones</th> </tr>
+        </thead>
+        <tbody>
+            {% for h in horarios %}
+            <tr>
+                <td><strong style="color: var(--brand-dark); transition: color var(--transition-fast);">{{ h.dia }}</strong></td>
+                <td>
+                    <div class="time-block">
+                        <i class="far fa-clock"></i> {{ h.hora_inicio }} - {{ h.hora_final }}
+                    </div>
+                </td>
+                <td><strong>{{ h.laboratorio }}</strong></td>
+                <td><i class="fas fa-user-check" style="color: var(--brand-accent); margin-right: 5px;"></i> {{ h.usuario }}</td>
+                <td>
+                    <span class="badge {% if h.estado == 'Confirmado' %}success{% else %}warning{% endif %}">
+                        {% if h.estado == 'Confirmado' %}<i class="fas fa-check-circle"></i>{% else %}<i class="fas fa-hourglass-half"></i>{% endif %}
+                        {{ h.estado }}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-icon btn-edit" title="Editar Asignación" 
+                            onclick="abrirEditarHorario('{{ h.id }}', '{{ h.id_usuario }}', '{{ h.id_laboratorio }}', '{{ h.dia_num }}', '{{ h.hora_inicio }}', '{{ h.hora_final }}', '{{ h.fecha_ini }}', '{{ h.fecha_fin }}')">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <form action="{{ url_for('eliminar_horario', id=h.id) }}" method="POST" style="margin:0;" onsubmit="return confirm('¿Seguro que deseas eliminar esta asignación de horario permanentemente?');">
+                            <button type="submit" class="btn-icon btn-del" title="Eliminar Asignación"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
+                    No hay horarios registrados.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="modalHorario" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Programar Nuevo Horario</h3>
+        <form action="{{ url_for('crear_horario') }}" method="POST">
+            
+            <div class="form-group">
+                <label>Laboratorio a Reservar</label>
+                <select name="id_laboratorio" required>
+                    <option value="" disabled selected>Seleccione un laboratorio...</option>
+                    {% for lab in catalogos['laboratorios'] %}
+                        <option value="{{ lab.id }}">{{ lab.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Usuario Responsable (Profesor/Encargado)</label>
+                <select name="id_usuario" required>
+                    <option value="" disabled selected>Seleccione el responsable...</option>
+                    {% for u in catalogos['usuarios'] %}
+                        <option value="{{ u.id }}">{{ u.nombre }} {{ u.apellido }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Día de la Semana</label>
+                <select name="dia_semana" required>
+                    <option value="1">Lunes</option>
+                    <option value="2">Martes</option>
+                    <option value="3">Miércoles</option>
+                    <option value="4">Jueves</option>
+                    <option value="5">Viernes</option>
+                    <option value="6">Sábado</option>
+                    <option value="7">Domingo</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Hora de Inicio</label><input type="time" name="hora_inicio" required></div>
+                <div class="form-group"><label>Hora Final</label><input type="time" name="hora_final" required></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Fecha Inicio Semestre</label><input type="date" name="fecha_inicio_semestre" required></div>
+                <div class="form-group"><label>Fecha Fin Semestre</label><input type="date" name="fecha_final_semestre" required></div>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalHorario').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Asignación</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditarHorario" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Editar Asignación de Horario</h3>
+        <form id="formEditHorario" method="POST">
+            
+            <div class="form-group">
+                <label>Laboratorio a Reservar</label>
+                <select id="edit_id_laboratorio" name="id_laboratorio" required>
+                    {% for lab in catalogos['laboratorios'] %}
+                        <option value="{{ lab.id }}">{{ lab.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Usuario Responsable (Profesor/Encargado)</label>
+                <select id="edit_id_usuario" name="id_usuario" required>
+                    {% for u in catalogos['usuarios'] %}
+                        <option value="{{ u.id }}">{{ u.nombre }} {{ u.apellido }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Día de la Semana</label>
+                <select id="edit_dia_semana" name="dia_semana" required>
+                    <option value="1">Lunes</option>
+                    <option value="2">Martes</option>
+                    <option value="3">Miércoles</option>
+                    <option value="4">Jueves</option>
+                    <option value="5">Viernes</option>
+                    <option value="6">Sábado</option>
+                    <option value="7">Domingo</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Hora de Inicio</label><input type="time" id="edit_hora_inicio" name="hora_inicio" required></div>
+                <div class="form-group"><label>Hora Final</label><input type="time" id="edit_hora_final" name="hora_final" required></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group"><label>Fecha Inicio Semestre</label><input type="date" id="edit_fecha_inicio_semestre" name="fecha_inicio_semestre" required></div>
+                <div class="form-group"><label>Fecha Fin Semestre</label><input type="date" id="edit_fecha_final_semestre" name="fecha_final_semestre" required></div>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditarHorario').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Actualizar Asignación</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalCapacidad" class="modal">
+    <div class="modal-content" style="width: 400px;">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--brand-dark);">Editar Capacidad Máxima</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">Ajustando límite para: <strong id="capacidad_nombre_lab" style="color: var(--brand-accent);"></strong></p>
+        
+        <form id="formCapacidad" method="POST">
+            <div class="form-group">
+                <label>Total de Espacios Físicos (PCs permitidas)</label>
+                <input type="number" id="input_capacidad" name="capacidad_maxima" min="1" max="100" required>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalCapacidad').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalCapacidad(id_lab, nombre, capacidad) {
+        document.getElementById('formCapacidad').action = '/laboratorios/editar_capacidad/' + id_lab;
+        document.getElementById('capacidad_nombre_lab').innerText = nombre;
+        document.getElementById('input_capacidad').value = capacidad;
+        document.getElementById('modalCapacidad').style.display = 'flex';
+    }
+
+    // AÑADIDO: SCRIPT PARA LLENAR Y ABRIR EL MODAL DE EDITAR HORARIOS
+    function abrirEditarHorario(id, id_usuario, id_laboratorio, dia_semana, hora_inicio, hora_final, fecha_inicio, fecha_final) {
+        document.getElementById('formEditHorario').action = '/horarios/editar/' + id;
+        document.getElementById('edit_id_usuario').value = id_usuario;
+        document.getElementById('edit_id_laboratorio').value = id_laboratorio;
+        document.getElementById('edit_dia_semana').value = dia_semana;
+        document.getElementById('edit_hora_inicio').value = hora_inicio;
+        document.getElementById('edit_hora_final').value = hora_final;
+        document.getElementById('edit_fecha_inicio_semestre').value = fecha_inicio;
+        document.getElementById('edit_fecha_final_semestre').value = fecha_final;
+        
+        document.getElementById('modalEditarHorario').style.display = 'flex';
+    }
+</script>
+{% endblock %}

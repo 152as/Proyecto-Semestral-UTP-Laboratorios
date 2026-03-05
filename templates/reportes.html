@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Reportes - LABS CRPO{% endblock %}
+
+{% block content %}
+<style>
+    /* ADAPTADO A MODO OSCURO CON VARIABLES INTELIGENTES */
+    .report-panel { background: var(--surface-white); padding: 35px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); border: 1px solid var(--border-color); flex: 1; display: flex; flex-direction: column; transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    .panel-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+    .panel-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
+    .panel-header h3 { font-size: 1.5rem; color: var(--brand-dark); font-weight: 700; margin: 0; transition: color var(--transition-fast); }
+    
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border-color); font-size: 1.1rem; color: var(--text-main); transition: border-color var(--transition-fast), color var(--transition-fast); }
+    .stat-row strong { font-size: 1.25rem; color: var(--brand-dark); transition: color var(--transition-fast); }
+    
+    .saas-select { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 1rem; color: var(--text-main); margin-bottom: 25px; outline: none; background: var(--bg-light); font-family: 'Inter', sans-serif; transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+    .saas-select:focus { border-color: var(--brand-accent); box-shadow: 0 0 0 3px var(--brand-glow); }
+    
+    .btn-action { width: 100%; padding: 16px; border-radius: 10px; border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all var(--transition-fast); display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: auto; }
+    .btn-pdf { background: var(--brand-dark); color: var(--bg-light); text-decoration: none; }
+    .btn-pdf:hover { background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transform: translateY(-2px); color: white; }
+    .btn-excel { background: #10b981; color: white; }
+    .btn-excel:hover { background: #059669; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transform: translateY(-2px); }
+    
+    /* ASEGURANDO QUE EL TÍTULO CAMBIE DE COLOR */
+    .section-title { font-size: 1.8rem; color: var(--brand-dark); font-weight: 700; margin: 0; transition: color var(--transition-fast); }
+</style>
+
+<h1 class="section-title"> Generar Reporte</h1>
+
+<div style="display: flex; gap: 30px; margin-top: 10px; flex-wrap: wrap;">
+    
+    <div class="report-panel">
+        <div class="panel-header">
+            <div class="panel-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--brand-accent);"><i class="fas fa-chart-pie"></i></div>
+            <h3>Resumen Operativo</h3>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <div class="stat-row">
+                <span>Tickets Abiertos (Mantenimiento)</span>
+                <strong>{{ datos.tickets_abiertos }}</strong>
+            </div>
+            <div class="stat-row">
+                <span>Tickets Resueltos Históricos</span>
+                <strong style="color: var(--success-color);">{{ datos.tickets_resueltos }}</strong>
+            </div>
+            <div class="stat-row" style="border-bottom: none;">
+                <span>Tasa de Ocupación de Labs (Aprox)</span>
+                <strong style="color: var(--brand-accent);">{{ datos.tasa_ocupacion }}</strong>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('exportar_pdf') }}" class="btn-action btn-pdf">
+            <i class="fas fa-file-pdf"></i> Descargar Reporte Ejecutivo (PDF)
+        </a>
+    </div>
+
+    <div class="report-panel">
+        <div class="panel-header">
+            <div class="panel-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success-color);"><i class="fas fa-database"></i></div>
+            <h3>Exportación de Datos</h3>
+        </div>
+        
+        <p style="color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;">Seleccione el módulo del cual desea extraer la información cruda para análisis externo.</p>
+        
+        <form action="{{ url_for('exportar_excel') }}" method="POST" style="display: flex; flex-direction: column; height: 100%;">
+            <select name="modulo_exportar" class="saas-select" required>
+                <option value="Inventario Global de Activos">Inventario Global de Activos</option>
+                <option value="Historial de Préstamos (Último Mes)">Historial de Préstamos</option>
+                <option value="Registro de Mantenimientos (Anual)">Registro de Mantenimientos</option>
+                <option value="Asignación de Horarios por Semestre">Asignación de Horarios por Semestre</option>
+            </select>
+            
+            <button type="submit" class="btn-action btn-excel"><i class="fas fa-file-excel"></i> Generar Archivo Excel (.xlsx)</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

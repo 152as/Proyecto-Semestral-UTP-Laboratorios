@@ -1,0 +1,134 @@
+/* static/style.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f4f7f6;
+    height: 100vh;
+    display: flex;
+}
+
+/* Layout dividido */
+.split-container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+.left-panel {
+    flex: 1;
+    background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+.left-panel h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.left-panel p {
+    font-size: 1.2rem;
+    color: #cbd5e1;
+}
+
+.right-panel {
+    flex: 1;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-wrapper {
+    width: 100%;
+    max-width: 450px;
+    padding: 2rem;
+}
+
+.form-wrapper h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #1e293b;
+}
+
+.form-wrapper p.subtitle {
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
+/* Inputs y Botones */
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 8px;
+    background-color: #f1f5f9;
+    font-size: 1rem;
+    color: #334155;
+    outline: none;
+    transition: background-color 0.3s;
+}
+
+.input-group input:focus {
+    background-color: #e2e8f0;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 1rem;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.link-text {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.link-text a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Grid para el registro */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Mantenimiento - LABS CRPO{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos de las tarjetas ADAPTADOS A MODO OSCURO */
+    .ticket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-top: 15px; }
+    .ticket-card { background: var(--surface-white); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow-color); border: 1px solid var(--border-color); transition: all 0.2s; display: flex; flex-direction: column; position: relative; transition: background-color var(--transition-fast), border-color var(--transition-fast);}
+    .ticket-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+    .ticket-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .ticket-title { font-size: 1.2rem; font-weight: 700; color: var(--brand-dark); margin-top: 5px; }
+    .ticket-info { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; flex-grow: 1;}
+    .info-row { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-main); }
+    .info-icon { width: 24px; height: 24px; background: var(--bg-light); border-radius: 6px; display: flex; justify-content: center; align-items: center; color: var(--brand-accent); }
+    
+    .badge { padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    .badge.warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    .badge.success { background: rgba(16, 185, 129, 0.15); color: var(--success-color); }
+    
+    .btn-primary { background: var(--brand-accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .btn-cancel { background: var(--bg-light); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn-cancel:hover { background: var(--border-color); }
+    
+    /* ESTADO VACIO ESTILO CUADRO BACANO */
+    .empty-state { 
+        text-align: center; 
+        padding: 60px 20px; 
+        color: var(--text-muted); 
+        grid-column: 1 / -1; 
+        background: var(--surface-white); 
+        border-radius: 16px;
+        box-shadow: 0 4px 20px var(--shadow-color);
+        border: 1px solid var(--border-color);
+        transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .empty-state i { font-size: 3.5rem; margin-bottom: 15px; opacity: 0.2; color: var(--brand-dark); }
+    .empty-state h3 { font-size: 1.25rem; color: var(--brand-dark); margin-bottom: 8px; }
+    .empty-state p { font-size: 0.95rem; }
+
+    /* MODAL CON BLUR Y COLORES DINÁMICOS */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-content { background: var(--surface-white); padding: 30px; border-radius: 12px; width: 450px; max-width: 90%; border: 1px solid var(--border-color); box-shadow: 0 10px 25px var(--shadow-color); transition: background-color var(--transition-fast), border-color var(--transition-fast); }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background-color: var(--bg-light); color: var(--text-main); transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast); }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--brand-accent); }
+    
+    .form-check { display:flex; align-items:center; gap:10px; background:var(--bg-light); padding:10px; border-radius:8px; border: 1px solid var(--border-color); }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+    <h1 class="section-title" style="margin:0; border:none;">Registrar Mantenimiento Técnico</h1>
+    <button class="btn-primary" onclick="document.getElementById('modalMantenimiento').style.display='flex'"><i class="fas fa-plus"></i> Crear Ticket</button>
+</div>
+
+<div class="ticket-grid">
+    {% if mantenimientos %}
+        {% for m in mantenimientos %}
+        <div class="ticket-card">
+            <div class="ticket-header">
+                <div>
+                    <span style="font-size:0.75rem; color:var(--text-muted); font-weight:bold;">{{ m.id }}</span>
+                    <h3 class="ticket-title"><i class="fas fa-wrench" style="margin-right:8px;"></i>{{ m.equipo_nombre }}</h3>
+                </div>
+                <span class="badge {% if m.finalizado %}success{% else %}warning{% endif %}">
+                    {{ m.estado }}
+                </span>
+            </div>
+            
+            <div class="ticket-info">
+                <div class="info-row"><div class="info-icon"><i class="fas fa-tools"></i></div> <strong>Motivo:</strong> {{ m.motivo }}</div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-tag"></i></div> <strong>Tipo:</strong> {{ m.tipo }}</div>
+                <div class="info-row"><div class="info-icon"><i class="far fa-calendar"></i></div> <strong>Inicio:</strong> {{ m.fecha }}</div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-user-tie"></i></div> <strong>Operador:</strong> {{ m.encargado_nombre }}</div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <button class="btn-primary" style="flex:1; justify-content: center; background: var(--brand-dark);" 
+                    data-id="{{ m.db_id }}" data-motivo="{{ m.motivo }}" data-tipo="{{ m.id_tipo }}" 
+                    data-enc="{{ m.encargado_id }}" data-inicio="{{ m.fecha }}" data-fin="{{ m.fecha_fin }}"
+                    data-finbool="{{ m.finalizado }}" onclick="abrirModalEditar(this)">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <form action="{{ url_for('eliminar_mantenimiento', id=m.db_id) }}" method="POST" onsubmit="return confirm('¿Eliminar ticket?')">
+                    <button type="submit" style="background:rgba(239, 68, 68, 0.15); color:var(--error-color); border:none; padding:10px; border-radius:8px; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-tools"></i>
+            <h3>No hay mantenimientos registrados</h3>
+            <p>Haz clic en "Crear Ticket" para abrir una nueva orden de servicio técnico.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div id="modalMantenimiento" class="modal">
+    <div class="modal-content">
+        <h3 style="color: var(--brand-dark); margin-top: 0; margin-bottom: 20px;">Nuevo Ticket</h3>
+        <form action="{{ url_for('crear_mantenimiento') }}" method="POST">
+            <div class="form-group"><label>Tipo</label>
+                <select name="id_tipo_mantenimiento">
+                    {% for t in catalogos['tipos_mantenimiento'] %}<option value="{{ t.id }}">{{ t.nombre }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group"><label>Equipo</label>
+                <select name="id_equipo">
+                    {% for eq in catalogos['equipos'] %}<option value="{{ eq.id }}">{{ eq.codigo_inventario }} - {{ eq.nombre }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group"><label>Motivo</label><textarea name="motivo" required></textarea></div>
+            <div class="form-group"><label>Encargado</label>
+                <select name="id_encargado">
+                    {% for e in catalogos['encargados'] %}<option value="{{ e.id }}">{{ e.nombre_completo }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group"><label>Inicio</label><input type="date" name="fecha_inicio" required></div>
+            <div class="form-group"><label>Fin Estimado</label><input type="date" name="fecha_finalizacion"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalMantenimiento').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditar" class="modal">
+    <div class="modal-content">
+        <h3 style="color: var(--brand-dark); margin-top: 0; margin-bottom: 20px;">Editar Ticket</h3>
+        <form id="formEditMant" method="POST">
+            <div class="form-group"><label>Motivo</label><textarea id="edit_motivo" name="motivo" required></textarea></div>
+            <div class="form-group"><label>Encargado</label>
+                <select id="edit_enc" name="id_encargado">
+                    {% for e in catalogos['encargados'] %}<option value="{{ e.id }}">{{ e.nombre_completo }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" id="edit_fin" name="finalizado" style="width:auto;">
+                <label style="margin:0;">¿Mantenimiento Finalizado?</label>
+            </div>
+            <input type="hidden" id="edit_tipo" name="id_tipo_mantenimiento">
+            <input type="hidden" id="edit_inicio" name="fecha_inicio">
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="document.getElementById('modalEditar').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primary">Actualizar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModalEditar(btn) {
+        document.getElementById('edit_motivo').value = btn.getAttribute('data-motivo');
+        document.getElementById('edit_enc').value = btn.getAttribute('data-enc');
+        document.getElementById('edit_tipo').value = btn.getAttribute('data-tipo');
+        document.getElementById('edit_inicio').value = btn.getAttribute('data-inicio');
+        document.getElementById('edit_fin').checked = btn.getAttribute('data-finbool') === 'True';
+        document.getElementById('formEditMant').action = "/mantenimiento/editar/" + btn.getAttribute('data-id');
+        document.getElementById('modalEditar').style.display = 'flex';
+    }
+</script>
+{% endblock %}
